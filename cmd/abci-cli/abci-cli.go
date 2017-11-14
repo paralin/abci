@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"os/exec"
+	//"os/exec"
 	"strings"
 
 	abcicli "github.com/tendermint/abci/client"
@@ -64,6 +64,17 @@ var (
 	addrD   string
 	persist string
 )
+
+var validArgs = []string{
+	"batch",
+	"echo",
+	"info",
+	"set_option",
+	"deliver_tx",
+	"check_tx",
+	"commit",
+	"query",
+}
 
 var RootCmd = &cobra.Command{
 	Use:   "abci-cli",
@@ -144,10 +155,11 @@ func addCommands() {
 }
 
 var batchCmd = &cobra.Command{
-	Use:   "batch",
-	Short: "Run a batch of abci commands against an application",
-	Long:  "",
-	Args:  cobra.ExactArgs(0),
+	Use:       "batch",
+	Short:     "Run a batch of abci commands against an application",
+	Long:      "",
+	Args:      cobra.ExactArgs(0),
+	ValidArgs: validArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return cmdBatch(cmd, args)
 	},
@@ -158,7 +170,7 @@ var consoleCmd = &cobra.Command{
 	Short:     "Start an interactive abci console for multiple commands",
 	Long:      "",
 	Args:      cobra.ExactArgs(0),
-	ValidArgs: []string{"batch", "echo", "info", "set_option", "deliver_tx", "check_tx", "commit", "query"},
+	ValidArgs: validArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return cmdConsole(cmd, args)
 	},
@@ -294,11 +306,22 @@ func cmdBatch(cmd *cobra.Command, args []string) error {
 		}
 
 		pArgs := persistentArgs(line)
-		out, err := exec.Command(pArgs[0], pArgs[1:]...).Output()
-		if err != nil {
-			return err
+
+		cmd.Use = pArgs[0]
+		args := pArgs[1:]
+
+		array := make([]string, len(args))
+		for i, arg := range args {
+			array[i] = arg
 		}
-		fmt.Println(string(out))
+		cmd.SetArgs(array)
+		cmd.Execute()
+
+		//out, err := exec.Command(pArgs[0], pArgs[1:]...).Output()
+		//if err != nil {
+		//	return err
+		//}
+		//fmt.Println(string(out))
 	}
 	return nil
 }
@@ -316,11 +339,45 @@ func cmdConsole(cmd *cobra.Command, args []string) error {
 		}
 
 		pArgs := persistentArgs(line)
-		out, err := exec.Command(pArgs[0], pArgs[1:]...).Output()
-		if err != nil {
-			return err
+		theCmd := pArgs[0]
+		args := pArgs[1:]
+
+		var tempCmd = &cobra.Command{}
+
+		switch theCmd {
+		case validArgs[0]:
+			tempCmd = batchCmd
+		case validArgs[1]:
+			tempCmd = echoCmd
+		case validArgs[2]:
+			tempCmd = infoCmd
+		case validArgs[3]:
+			tempCmd = setOptionCmd
+		case validArgs[4]:
+			tempCmd = deliverTxCmd
+		case validArgs[5]:
+			tempCmd = checkTxCmd
+		case validArgs[6]:
+			tempCmd = commitCmd
+		case validArgs[7]:
+			tempCmd = queryCmd
+		default:
+			return nil // error
 		}
-		fmt.Println(string(out))
+
+		array := make([]string, len(args))
+		for i, arg := range args {
+			array[i] = arg
+		}
+		tempCmd.SetArgs(array)
+		tempCmd.Execute()
+
+		//out, err := exec.Command(pArgs[0], pArgs[1:]...).Output()
+		//if err != nil {
+		//	return err
+		//}
+		// XXX how to grab from tempCmd.Execulte() ?
+		//fmt.Println(string(out))
 	}
 	return nil
 }
