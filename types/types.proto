@@ -217,12 +217,12 @@ message PartSetHeader {
 }
 
 message Validator {
-  bytes pub_key = 1;
+  string pub_key = 1;
   int64 power = 2;
 }
 
 message Evidence {
-  bytes pub_key = 1;
+  string pub_key = 1;
   int64 height = 2;
 }
 

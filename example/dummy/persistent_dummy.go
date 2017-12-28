@@ -7,9 +7,9 @@ import (
 	"strconv"
 	"strings"
 
+	crypto "github.com/libp2p/go-libp2p-crypto"
 	"github.com/tendermint/abci/example/code"
 	"github.com/tendermint/abci/types"
-	crypto "github.com/tendermint/go-crypto"
 	"github.com/tendermint/iavl"
 	cmn "github.com/tendermint/tmlibs/common"
 	dbm "github.com/tendermint/tmlibs/db"
@@ -174,7 +174,7 @@ func (app *PersistentDummyApplication) execValidatorTx(tx []byte) types.Response
 			Code: code.CodeTypeEncodingError,
 			Log:  fmt.Sprintf("Pubkey (%s) is invalid hex", pubkeyS)}
 	}
-	_, err = crypto.PubKeyFromBytes(pubkey)
+	_, err = crypto.UnmarshalPublicKey(pubkey)
 	if err != nil {
 		return types.ResponseDeliverTx{
 			Code: code.CodeTypeEncodingError,
@@ -190,7 +190,7 @@ func (app *PersistentDummyApplication) execValidatorTx(tx []byte) types.Response
 	}
 
 	// update
-	return app.updateValidator(&types.Validator{pubkey, power})
+	return app.updateValidator(&types.Validator{pubkeyS, power})
 }
 
 // add, update, or remove a validator

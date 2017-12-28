@@ -1,12 +1,25 @@
 package types
 
 import (
-	"bytes"
 	"encoding/json"
+	"strings"
 
-	"github.com/tendermint/go-wire/data"
+	crypto "github.com/libp2p/go-libp2p-crypto"
+	gdata "github.com/tendermint/go-wire/data"
 	cmn "github.com/tendermint/tmlibs/common"
 )
+
+//------------------------------------------------------------------------------
+
+// ParsePubKey parses the pub key field.
+func (v *Validator) ParsePubKey() (crypto.PubKey, error) {
+	var data []byte
+	if err := gdata.Encoder.Unmarshal(&data, []byte(v.PubKey)); err != nil {
+		return nil, err
+	}
+
+	return crypto.UnmarshalPublicKey(data)
+}
 
 //------------------------------------------------------------------------------
 
@@ -19,7 +32,7 @@ func (v Validators) Len() int {
 
 // XXX: doesn't distinguish same validator with different power
 func (v Validators) Less(i, j int) bool {
-	return bytes.Compare(v[i].PubKey, v[j].PubKey) <= 0
+	return strings.Compare(v[i].PubKey, v[j].PubKey) <= 0
 }
 
 func (v Validators) Swap(i, j int) {
@@ -41,8 +54,8 @@ func ValidatorsString(vs Validators) string {
 }
 
 type validatorPretty struct {
-	PubKey data.Bytes `json:"pub_key"`
-	Power  int64      `json:"power"`
+	PubKey string `json:"pub_key"`
+	Power  int64  `json:"power"`
 }
 
 //------------------------------------------------------------------------------

@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"math/rand"
 
+	crypto "github.com/libp2p/go-libp2p-crypto"
 	abcicli "github.com/tendermint/abci/client"
 	"github.com/tendermint/abci/types"
-	crypto "github.com/tendermint/go-crypto"
+	gdata "github.com/tendermint/go-wire/data"
 	cmn "github.com/tendermint/tmlibs/common"
 )
 
@@ -15,9 +17,24 @@ func InitChain(client abcicli.Client) error {
 	total := 10
 	vals := make([]*types.Validator, total)
 	for i := 0; i < total; i++ {
-		pubkey := crypto.GenPrivKeyEd25519FromSecret([]byte(cmn.Fmt("test%d", i))).PubKey().Bytes()
+		r := rand.New(rand.NewSource(int64(1035132 + (i * 1337))))
+		_, pubKey, err := crypto.GenerateEd25519Key(r)
+		if err != nil {
+			return err
+		}
+
+		pubKeyBin, err := pubKey.Bytes()
+		if err != nil {
+			return err
+		}
+
+		pubKeyStr, err := gdata.Encoder.Marshal(pubKeyBin)
+		if err != nil {
+			return err
+		}
+
 		power := cmn.RandInt()
-		vals[i] = &types.Validator{pubkey, int64(power)}
+		vals[i] = &types.Validator{string(pubKeyStr), int64(power)}
 	}
 	_, err := client.InitChainSync(types.RequestInitChain{Validators: vals})
 	if err != nil {

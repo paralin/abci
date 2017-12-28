@@ -1,17 +1,35 @@
 package dummy
 
 import (
+	crypto "github.com/libp2p/go-libp2p-crypto"
 	"github.com/tendermint/abci/types"
-	crypto "github.com/tendermint/go-crypto"
+	"github.com/tendermint/go-wire/data"
 	cmn "github.com/tendermint/tmlibs/common"
+	"math/rand"
 )
 
 // RandVal creates one random validator, with a key derived
 // from the input value
 func RandVal(i int) *types.Validator {
-	pubkey := crypto.GenPrivKeyEd25519FromSecret([]byte(cmn.Fmt("test%d", i))).PubKey().Bytes()
+	// keyBin := []byte(cmn.Fmt("test%d", i))
+	r := rand.New(rand.NewSource(int64(1035132 + (i * 1337))))
+	_, pubKey, err := crypto.GenerateEd25519Key(r)
+	if err != nil {
+		panic(err)
+	}
+
+	pubKeyBin, err := pubKey.Bytes()
+	if err != nil {
+		panic(err)
+	}
+
+	pubKeyStr, err := data.Encoder.Marshal(pubKeyBin)
+	if err != nil {
+		panic(err)
+	}
+
 	power := cmn.RandUint16() + 1
-	return &types.Validator{pubkey, int64(power)}
+	return &types.Validator{string(pubKeyStr), int64(power)}
 }
 
 // RandVals returns a list of cnt validators for initializing
